@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Capture Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 800px;
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+            text-align: center;
+        }
+        
+        .code-section {
+            background: #f7f7f7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .code-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .code-input-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .code-input {
+            flex: 1;
+            padding: 12px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+        }
+        
+        .code-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .go-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .go-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .current-code {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+        }
+        
+        .image-section {
+            background: #fafafa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .image-container {
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .image-container:hover {
+            transform: scale(1.02);
+        }
+        
+        .image-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+            display: block;
+        }
+        
+        .placeholder {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 16px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        
+        .status-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .status-error {
+            background: #fee;
+            color: #c33;
+        }
+        
+        .status-success {
+            background: #efe;
+            color: #3c3;
+        }
+        
+        .refresh-info {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 Image Capture Viewer</h1>
+        
+        <div class="code-section">
+            <div class="code-label">Enter Access Code:</div>
+            <div class="code-input-container">
+                <input type="text" class="code-input" id="codeInput" 
+                       placeholder="Enter 8-character code" maxlength="8">
+                <button class="go-button" id="goButton">GO</button>
+            </div>
+            <div class="current-code">Valid Code: <strong>8Z5HR55H</strong></div>
+        </div>
+        
+        <div class="image-section">
+            <div class="image-container" id="imageContainer" onclick="refreshImage()">
+                <div class="placeholder" id="placeholder">Enter code to view image</div>
+                <img id="capturedImage" src="" alt="Captured Image" style="display: none;">
+            </div>
+            
+            <div id="statusMessage" class="status-message"></div>
+            <div class="refresh-info">Click image to refresh | Auto-refreshes every 30s</div>
+        </div>
+    </div>
+    
+    <script>
+        const validCode = "8Z5HR55H";
+        let isAuthorized = false;
+        let refreshInterval = null;
+        
+        // Elements
+        const codeInput = document.getElementById('codeInput');
+        const goButton = document.getElementById('goButton');
+        const placeholder = document.getElementById('placeholder');
+        const capturedImage = document.getElementById('capturedImage');
+        const statusMessage = document.getElementById('statusMessage');
+        
+        // Load image function
+        function loadImage() {
+            if (!isAuthorized) return;
+            
+            const timestamp = new Date().getTime();
+            capturedImage.src = `latest.png?${timestamp}`;
+            capturedImage.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            statusMessage.className = 'status-message status-success';
+            statusMessage.textContent = 'Image loaded successfully';
+            
+            setTimeout(() => {
+                if (statusMessage.textContent.includes('success')) {
+                    statusMessage.textContent = '';
+                }
+            }, 3000);
+        }
+        
+        // Handle image error
+        capturedImage.onerror = function() {
+            if (isAuthorized) {
+                capturedImage.style.display = 'none';
+                placeholder.style.display = 'block';
+                placeholder.textContent = 'No image available yet';
+                
+                statusMessage.className = 'status-message status-error';
+                statusMessage.textContent = 'Image not found';
+            }
+        };
+        
+        // Check code function
+        function checkCode() {
+            const enteredCode = codeInput.value.trim().toUpperCase();
+            
+            if (enteredCode === validCode) {
+                isAuthorized = true;
+                loadImage();
+                
+                if (refreshInterval) clearInterval(refreshInterval);
+                refreshInterval = setInterval(loadImage, 30000);
+                
+                statusMessage.className = 'status-message status-success';
+                statusMessage.textContent = 'Access granted';
+                
+                setTimeout(() => {
+                    if (statusMessage.textContent === 'Access granted') {
+                        statusMessage.textContent = '';
+                    }
+                }, 3000);
+            } else {
+                isAuthorized = false;
+                capturedImage.style.display = 'none';
+                placeholder.style.display = 'block';
+                placeholder.textContent = 'Invalid code - enter correct code';
+                
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                    refreshInterval = null;
+                }
+                
+                statusMessage.className = 'status-message status-error';
+                statusMessage.textContent = 'Invalid access code';
+            }
+        }
+        
+        // Refresh image function (manual)
+        function refreshImage() {
+            if (isAuthorized) {
+                loadImage();
+            }
+        }
+        
+        // Event listeners
+        goButton.addEventListener('click', checkCode);
+        codeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkCode();
+            }
+        });
+        
+        codeInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    </script>
+</body>
+</html>
