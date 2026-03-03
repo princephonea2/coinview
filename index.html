@@ -153,6 +153,21 @@
             color: #aaa;
             text-align: center;
         }
+        
+        .folder-link {
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .folder-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .folder-link a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -166,7 +181,7 @@
                        placeholder="Enter 8-character code" maxlength="8">
                 <button class="go-button" id="goButton">GO</button>
             </div>
-            <div class="current-code">Valid Code: <strong>I1E4HRE4</strong></div>
+            <div class="current-code">Valid Code: <strong>8QJQWRQA</strong></div>
         </div>
         
         <div class="image-section">
@@ -177,11 +192,18 @@
             
             <div id="statusMessage" class="status-message"></div>
             <div class="refresh-info">Click image to refresh | Auto-refreshes every 30s</div>
+            
+            <div class="folder-link">
+                <a href="https://drive.google.com/drive/folders/1pyYCOR4cjBu5DmYzhenh-7AbrYPt2QTQ" target="_blank">
+                    📁 View all captured images in Google Drive
+                </a>
+            </div>
         </div>
     </div>
     
     <script>
-        const validCode = "I1E4HRE4";
+        const validCode = "8QJQWRQA";
+        const imageUrl = "https://drive.google.com/uc?export=view&id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU";
         let isAuthorized = false;
         let refreshInterval = null;
         
@@ -197,7 +219,7 @@
             if (!isAuthorized) return;
             
             const timestamp = new Date().getTime();
-            capturedImage.src = `latest.png?${timestamp}`;
+            capturedImage.src = `${imageUrl}${imageUrl.includes('?') ? '&' : '?'}${timestamp}`;
             capturedImage.style.display = 'block';
             placeholder.style.display = 'none';
             
