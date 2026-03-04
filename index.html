@@ -391,19 +391,9 @@
             window.location.href = 'about:blank';
         }
         
-        const validCode = "4G24I7NW";
-        const fileId = "1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU";
-        
-        // Multiple URL formats including the working thumbnail URL
-        const imageUrls = [
-            'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1000',  // Your working thumbnail URL
-            'https://drive.google.com/uc?export=view&id=' + fileId,
-            'https://drive.usercontent.google.com/download?id=' + fileId + '&export=view',
-            'https://lh3.googleusercontent.com/d/' + fileId,
-            'https://docs.google.com/uc?id=' + fileId + '&export=download'
-        ];
-        
-        let currentUrlIndex = 0;
+        const validCode = "T32T8NZ5";
+        // The WORKING image URL that updates when refreshed directly
+        const baseImageUrl = "https://drive.usercontent.google.com/download?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&export=view";
         let isAuthorized = false;
         let refreshInterval = null;
         let loadAttempt = 0;
@@ -421,27 +411,28 @@
             this.focus();
         });
         
-        // Function to try different URLs until one works
-        function loadImageWithRetry() {
+        // Force reload image by creating a new Image object
+        function loadImage() {
             if (!isAuthorized) return;
             
             loadAttempt++;
+            // Add timestamp and random string to make URL completely unique
             const timestamp = Date.now();
-            const random = Math.random().toString(36).substring(2, 10);
-            // Add cache busting parameters
-            const separator = imageUrls[currentUrlIndex].includes('?') ? '&' : '?';
-            const url = imageUrls[currentUrlIndex] + separator + '_t=' + timestamp + '&_r=' + random;
+            const randomStr = Math.random().toString(36).substring(2, 15);
+            // Use the base URL and add a unique cache-busting parameter
+            const imageSrc = baseImageUrl + '&_cb=' + timestamp + '_' + randomStr;
             
-            console.log('Trying URL:', url); // For debugging
+            console.log('Loading image:', imageSrc);
             
+            // Create a NEW Image object - this forces a fresh request bypassing cache
             const newImage = new Image();
             
             newImage.onload = function() {
-                console.log('Success with URL:', url); // For debugging
-                capturedImage.src = url;
+                console.log('Image loaded successfully');
+                // Update the displayed image with the new URL
+                capturedImage.src = this.src;
                 capturedImage.style.display = 'block';
                 placeholder.style.display = 'none';
-                currentUrlIndex = 0; // Reset to first URL on success
                 
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '✓ Live image updated';
@@ -454,29 +445,26 @@
             };
             
             newImage.onerror = function() {
-                console.log('Failed with URL:', url); // For debugging
-                // Try next URL
-                currentUrlIndex = (currentUrlIndex + 1) % imageUrls.length;
-                
-                if (loadAttempt < 10) { // Try up to 10 times
-                    setTimeout(loadImageWithRetry, 1000);
-                } else {
+                console.log('Image failed to load');
+                if (isAuthorized) {
                     capturedImage.style.display = 'none';
                     placeholder.style.display = 'block';
                     placeholder.textContent = '⏳ Waiting for image...';
+                    
                     statusMessage.className = 'status-message status-error';
                     statusMessage.textContent = '! Image not available';
                     
-                    // Reset after 10 seconds
+                    // Retry after 3 seconds
                     setTimeout(() => {
-                        loadAttempt = 0;
-                        currentUrlIndex = 0; // Start from thumbnail URL again
-                        if (isAuthorized) loadImageWithRetry();
-                    }, 10000);
+                        if (isAuthorized) {
+                            loadImage();
+                        }
+                    }, 3000);
                 }
             };
             
-            newImage.src = url;
+            // Start loading the new image
+            newImage.src = imageSrc;
         }
         
         // Handle image click - manual refresh
@@ -484,9 +472,7 @@
             if (isAuthorized) {
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '↻ Refreshing...';
-                loadAttempt = 0;
-                currentUrlIndex = 0; // Start from thumbnail URL
-                loadImageWithRetry();
+                loadImage();
             }
         });
         
@@ -497,17 +483,10 @@
             if (enteredCode === validCode) {
                 isAuthorized = true;
                 loadAttempt = 0;
-                currentUrlIndex = 0; // Start with thumbnail URL
-                loadImageWithRetry();
+                loadImage();
                 
                 if (refreshInterval) clearInterval(refreshInterval);
-                refreshInterval = setInterval(() => {
-                    if (isAuthorized) {
-                        loadAttempt = 0;
-                        currentUrlIndex = 0; // Start with thumbnail URL on each refresh
-                        loadImageWithRetry();
-                    }
-                }, 30000);
+                refreshInterval = setInterval(loadImage, 30000);
                 
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '✓ Access granted';
@@ -568,9 +547,6 @@
                 return false;
             }
         };
-        
-        // Add console message to verify script is running
-        console.log('Image viewer initialized with thumbnail URL as first option');
     </script>
 </body>
 </html>
