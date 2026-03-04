@@ -3,14 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    
-    <!-- STRONG CACHE DISABLING META TAGS -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <meta http-equiv="pragma" content="no-cache">
-    <meta name="referrer" content="no-referrer">
-    
     <title>Track Your Coins - Live</title>
     <style>
         * {
@@ -182,7 +174,6 @@
             transition: transform 0.3s ease;
             border: 2px solid #dee2e6;
             overflow: hidden;
-            position: relative;
         }
         
         .image-container:hover {
@@ -198,41 +189,6 @@
             pointer-events: none;
             user-select: none;
             -webkit-user-drag: none;
-        }
-        
-        .refresh-button-container {
-            display: flex;
-            justify-content: center;
-            margin: 15px 0 5px;
-        }
-        
-        .refresh-button {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 12px 25px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-        }
-        
-        .refresh-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
-        }
-        
-        .refresh-button:active {
-            transform: translateY(0);
-        }
-        
-        .refresh-button i {
-            font-size: 18px;
         }
         
         .placeholder {
@@ -325,11 +281,6 @@
                 width: 35px;
                 height: 35px;
             }
-            
-            .refresh-button {
-                padding: 10px 20px;
-                font-size: 14px;
-            }
         }
     </style>
 </head>
@@ -368,15 +319,8 @@
                 <img id="capturedImage" src="" alt="Live Coin Tracker" style="display: none;">
             </div>
             
-            <!-- Manual Refresh Button -->
-            <div class="refresh-button-container">
-                <button class="refresh-button" id="refreshButton" style="display: none;">
-                    <span>🔄</span> Force Refresh Image
-                </button>
-            </div>
-            
             <div id="statusMessage" class="status-message"></div>
-            <div class="refresh-info">🔄 Auto-refreshes every 30 seconds | Click button to force refresh</div>
+            <div class="refresh-info">🔄 Auto-refreshes every 30 seconds | Click image to refresh</div>
         </div>
         
         <div class="footer">
@@ -447,9 +391,19 @@
             window.location.href = 'about:blank';
         }
         
-        const validCode = "8U3EFVT1";
-        // Use the working Google CDN URL that updates properly
-        const baseImageUrl = "https://lh3.googleusercontent.com/d/1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU=w1000";
+        const validCode = "JNANYFW0";
+        const fileId = "1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU";
+        
+        // Multiple URL formats including the working thumbnail URL
+        const imageUrls = [
+            'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1000',  // Your working thumbnail URL
+            'https://drive.google.com/uc?export=view&id=' + fileId,
+            'https://drive.usercontent.google.com/download?id=' + fileId + '&export=view',
+            'https://lh3.googleusercontent.com/d/' + fileId,
+            'https://docs.google.com/uc?id=' + fileId + '&export=download'
+        ];
+        
+        let currentUrlIndex = 0;
         let isAuthorized = false;
         let refreshInterval = null;
         let loadAttempt = 0;
@@ -461,100 +415,78 @@
         const capturedImage = document.getElementById('capturedImage');
         const statusMessage = document.getElementById('statusMessage');
         const imageContainer = document.getElementById('imageContainer');
-        const refreshButton = document.getElementById('refreshButton');
         
         // Enable paste on mobile
         codeInput.addEventListener('touchstart', function() {
             this.focus();
         });
         
-        // Function to generate a completely unique URL that forces a fresh load
-        function getForceRefreshUrl() {
-            // Use multiple random parameters to ensure the browser treats it as a new request
-            const timestamp = Date.now();
-            const random1 = Math.random().toString(36).substring(2, 15);
-            const random2 = Math.random().toString(36).substring(2, 15);
-            const random3 = Math.random().toString(36).substring(2, 15);
-            
-            // Add multiple cache-busting parameters
-            return baseImageUrl + '&_cb=' + timestamp + 
-                   '&_r1=' + random1 + 
-                   '&_r2=' + random2 + 
-                   '&_r3=' + random3 + 
-                   '&_nocache=' + Math.random();
-        }
-        
-        // Force reload image by creating a new Image object and using a unique URL
-        function loadImage(forceRefresh = false) {
+        // Function to try different URLs until one works
+        function loadImageWithRetry() {
             if (!isAuthorized) return;
             
             loadAttempt++;
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2, 10);
+            // Add cache busting parameters
+            const separator = imageUrls[currentUrlIndex].includes('?') ? '&' : '?';
+            const url = imageUrls[currentUrlIndex] + separator + '_t=' + timestamp + '&_r=' + random;
             
-            // Generate a completely unique URL
-            const imageSrc = getForceRefreshUrl();
+            console.log('Trying URL:', url); // For debugging
             
-            console.log('Loading fresh image:', imageSrc);
-            
-            // Create a NEW Image object - this forces a completely fresh request
             const newImage = new Image();
             
-            // Add a random query parameter that changes with each request
-            newImage.src = imageSrc;
-            
             newImage.onload = function() {
-                console.log('Image loaded successfully');
-                
-                // Set the image source with cache-busting headers
-                capturedImage.src = this.src;
+                console.log('Success with URL:', url); // For debugging
+                capturedImage.src = url;
                 capturedImage.style.display = 'block';
                 placeholder.style.display = 'none';
+                currentUrlIndex = 0; // Reset to first URL on success
                 
-                // Show success message
                 statusMessage.className = 'status-message status-success';
-                statusMessage.textContent = '✓ Image updated successfully';
+                statusMessage.textContent = '✓ Live image updated';
                 
                 setTimeout(() => {
-                    if (statusMessage.textContent === '✓ Image updated successfully') {
+                    if (statusMessage.textContent === '✓ Live image updated') {
                         statusMessage.textContent = '';
                     }
                 }, 2000);
             };
             
             newImage.onerror = function() {
-                console.log('Image failed to load');
-                if (isAuthorized) {
+                console.log('Failed with URL:', url); // For debugging
+                // Try next URL
+                currentUrlIndex = (currentUrlIndex + 1) % imageUrls.length;
+                
+                if (loadAttempt < 10) { // Try up to 10 times
+                    setTimeout(loadImageWithRetry, 1000);
+                } else {
                     capturedImage.style.display = 'none';
                     placeholder.style.display = 'block';
                     placeholder.textContent = '⏳ Waiting for image...';
-                    
                     statusMessage.className = 'status-message status-error';
                     statusMessage.textContent = '! Image not available';
                     
-                    // Retry after 3 seconds
+                    // Reset after 10 seconds
                     setTimeout(() => {
-                        if (isAuthorized) {
-                            loadImage(true);
-                        }
-                    }, 3000);
+                        loadAttempt = 0;
+                        currentUrlIndex = 0; // Start from thumbnail URL again
+                        if (isAuthorized) loadImageWithRetry();
+                    }, 10000);
                 }
             };
+            
+            newImage.src = url;
         }
         
-        // Handle image click - also triggers refresh
+        // Handle image click - manual refresh
         imageContainer.addEventListener('click', function() {
             if (isAuthorized) {
                 statusMessage.className = 'status-message status-success';
-                statusMessage.textContent = '↻ Refreshing image...';
-                loadImage(true);
-            }
-        });
-        
-        // Handle refresh button click
-        refreshButton.addEventListener('click', function() {
-            if (isAuthorized) {
-                statusMessage.className = 'status-message status-success';
-                statusMessage.textContent = '↻ Force refreshing...';
-                loadImage(true);
+                statusMessage.textContent = '↻ Refreshing...';
+                loadAttempt = 0;
+                currentUrlIndex = 0; // Start from thumbnail URL
+                loadImageWithRetry();
             }
         });
         
@@ -565,20 +497,15 @@
             if (enteredCode === validCode) {
                 isAuthorized = true;
                 loadAttempt = 0;
+                currentUrlIndex = 0; // Start with thumbnail URL
+                loadImageWithRetry();
                 
-                // Show refresh button
-                refreshButton.style.display = 'inline-flex';
-                
-                // Load image with force refresh
-                loadImage(true);
-                
-                // Clear any existing interval
                 if (refreshInterval) clearInterval(refreshInterval);
-                
-                // Set new interval for auto-refresh (30 seconds) with force refresh
                 refreshInterval = setInterval(() => {
                     if (isAuthorized) {
-                        loadImage(true);
+                        loadAttempt = 0;
+                        currentUrlIndex = 0; // Start with thumbnail URL on each refresh
+                        loadImageWithRetry();
                     }
                 }, 30000);
                 
@@ -591,16 +518,12 @@
                     }
                 }, 2000);
                 
-                // Clear input for security
                 codeInput.value = '';
             } else {
                 isAuthorized = false;
                 capturedImage.style.display = 'none';
                 placeholder.style.display = 'block';
                 placeholder.textContent = '❌ Invalid code - access denied';
-                
-                // Hide refresh button
-                refreshButton.style.display = 'none';
                 
                 if (refreshInterval) {
                     clearInterval(refreshInterval);
@@ -646,13 +569,8 @@
             }
         };
         
-        // Add cache-busting for the page itself
-        window.onload = function() {
-            // Disable page caching
-            if (history.replaceState) {
-                history.replaceState(null, null, location.href + '?_=' + Date.now());
-            }
-        };
+        // Add console message to verify script is running
+        console.log('Image viewer initialized with thumbnail URL as first option');
     </script>
 </body>
 </html>
