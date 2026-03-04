@@ -124,6 +124,8 @@
             letter-spacing: 4px;
             background: white;
             transition: all 0.3s ease;
+            -webkit-user-select: text;
+            user-select: text;
         }
         
         .code-input:focus {
@@ -389,8 +391,8 @@
             window.location.href = 'about:blank';
         }
         
-        const validCode = "BUVH99I0";
-        // Working image URL
+        const validCode = "9DEF59XP";
+        // WORKING IMAGE URL that updates properly
         const baseImageUrl = "https://drive.usercontent.google.com/download?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&export=view";
         let isAuthorized = false;
         let refreshInterval = null;
@@ -404,6 +406,11 @@
         const capturedImage = document.getElementById('capturedImage');
         const statusMessage = document.getElementById('statusMessage');
         const imageContainer = document.getElementById('imageContainer');
+        
+        // Enable paste on mobile
+        codeInput.addEventListener('touchstart', function() {
+            this.focus();
+        });
         
         // Function to generate a cache-busting URL
         function getCacheBustedUrl() {
@@ -420,14 +427,10 @@
             loadAttempt++;
             const imageSrc = getCacheBustedUrl();
             
-            // Log the URL being loaded (for debugging)
-            console.log('Loading image from:', imageSrc);
-            
             // Create new image object to force reload
             const newImage = new Image();
             
             newImage.onload = function() {
-                console.log('Image loaded successfully');
                 capturedImage.src = imageSrc;
                 capturedImage.style.display = 'block';
                 placeholder.style.display = 'none';
@@ -444,7 +447,6 @@
             };
             
             newImage.onerror = function() {
-                console.log('Image failed to load from:', imageSrc);
                 if (isAuthorized) {
                     capturedImage.style.display = 'none';
                     placeholder.style.display = 'block';
@@ -538,8 +540,13 @@
             }
         });
         
-        // Add a simple test to verify JavaScript is working
-        console.log('Image viewer initialized with base URL:', baseImageUrl);
+        // Prevent viewing source via right-click or keyboard
+        document.onkeydown = function(e) {
+            e = e || window.event;
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                return false;
+            }
+        };
     </script>
 </body>
 </html>
