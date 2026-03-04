@@ -391,12 +391,21 @@
             window.location.href = 'about:blank';
         }
         
-        const validCode = "9DEF59XP";
-        // WORKING IMAGE URL that updates properly
-        const baseImageUrl = "https://drive.usercontent.google.com/download?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&export=view";
+        const validCode = "4G24I7NW";
+        const fileId = "1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU";
+        
+        // Multiple URL formats including the working thumbnail URL
+        const imageUrls = [
+            'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1000',  // Your working thumbnail URL
+            'https://drive.google.com/uc?export=view&id=' + fileId,
+            'https://drive.usercontent.google.com/download?id=' + fileId + '&export=view',
+            'https://lh3.googleusercontent.com/d/' + fileId,
+            'https://docs.google.com/uc?id=' + fileId + '&export=download'
+        ];
+        
+        let currentUrlIndex = 0;
         let isAuthorized = false;
         let refreshInterval = null;
-        let lastImageLoad = 0;
         let loadAttempt = 0;
         
         // Elements
@@ -412,29 +421,27 @@
             this.focus();
         });
         
-        // Function to generate a cache-busting URL
-        function getCacheBustedUrl() {
-            const timestamp = Date.now();
-            const random = Math.random().toString(36).substring(2, 10);
-            // Add cache-busting parameters
-            return baseImageUrl + '&_t=' + timestamp + '&_r=' + random;
-        }
-        
-        // Force reload image with cache busting
-        function loadImage() {
+        // Function to try different URLs until one works
+        function loadImageWithRetry() {
             if (!isAuthorized) return;
             
             loadAttempt++;
-            const imageSrc = getCacheBustedUrl();
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2, 10);
+            // Add cache busting parameters
+            const separator = imageUrls[currentUrlIndex].includes('?') ? '&' : '?';
+            const url = imageUrls[currentUrlIndex] + separator + '_t=' + timestamp + '&_r=' + random;
             
-            // Create new image object to force reload
+            console.log('Trying URL:', url); // For debugging
+            
             const newImage = new Image();
             
             newImage.onload = function() {
-                capturedImage.src = imageSrc;
+                console.log('Success with URL:', url); // For debugging
+                capturedImage.src = url;
                 capturedImage.style.display = 'block';
                 placeholder.style.display = 'none';
-                lastImageLoad = Date.now();
+                currentUrlIndex = 0; // Reset to first URL on success
                 
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '✓ Live image updated';
@@ -447,24 +454,29 @@
             };
             
             newImage.onerror = function() {
-                if (isAuthorized) {
+                console.log('Failed with URL:', url); // For debugging
+                // Try next URL
+                currentUrlIndex = (currentUrlIndex + 1) % imageUrls.length;
+                
+                if (loadAttempt < 10) { // Try up to 10 times
+                    setTimeout(loadImageWithRetry, 1000);
+                } else {
                     capturedImage.style.display = 'none';
                     placeholder.style.display = 'block';
                     placeholder.textContent = '⏳ Waiting for image...';
-                    
                     statusMessage.className = 'status-message status-error';
                     statusMessage.textContent = '! Image not available';
                     
-                    // Retry after 3 seconds
+                    // Reset after 10 seconds
                     setTimeout(() => {
-                        if (isAuthorized) {
-                            loadImage();
-                        }
-                    }, 3000);
+                        loadAttempt = 0;
+                        currentUrlIndex = 0; // Start from thumbnail URL again
+                        if (isAuthorized) loadImageWithRetry();
+                    }, 10000);
                 }
             };
             
-            newImage.src = imageSrc;
+            newImage.src = url;
         }
         
         // Handle image click - manual refresh
@@ -472,7 +484,9 @@
             if (isAuthorized) {
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '↻ Refreshing...';
-                loadImage();
+                loadAttempt = 0;
+                currentUrlIndex = 0; // Start from thumbnail URL
+                loadImageWithRetry();
             }
         });
         
@@ -483,10 +497,17 @@
             if (enteredCode === validCode) {
                 isAuthorized = true;
                 loadAttempt = 0;
-                loadImage();
+                currentUrlIndex = 0; // Start with thumbnail URL
+                loadImageWithRetry();
                 
                 if (refreshInterval) clearInterval(refreshInterval);
-                refreshInterval = setInterval(loadImage, 30000);
+                refreshInterval = setInterval(() => {
+                    if (isAuthorized) {
+                        loadAttempt = 0;
+                        currentUrlIndex = 0; // Start with thumbnail URL on each refresh
+                        loadImageWithRetry();
+                    }
+                }, 30000);
                 
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '✓ Access granted';
@@ -547,6 +568,9 @@
                 return false;
             }
         };
+        
+        // Add console message to verify script is running
+        console.log('Image viewer initialized with thumbnail URL as first option');
     </script>
 </body>
 </html>
