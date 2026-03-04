@@ -389,13 +389,12 @@
             window.location.href = 'about:blank';
         }
         
-        const validCode = "IWR8ZY09";
-        // Working image URL
-        const baseImageUrl = "https://drive.usercontent.google.com/download?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&export=view";
+        const validCode = "CMBARFVI";
+        // PERMANENT image URL that never changes
+        const imageUrl = "https://drive.google.com/thumbnail?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&sz=w1000";
         let isAuthorized = false;
         let refreshInterval = null;
         let lastImageLoad = 0;
-        let loadAttempt = 0;
         
         // Elements
         const codeInput = document.getElementById('codeInput');
@@ -405,29 +404,26 @@
         const statusMessage = document.getElementById('statusMessage');
         const imageContainer = document.getElementById('imageContainer');
         
-        // Function to generate a cache-busting URL
-        function getCacheBustedUrl() {
-            const timestamp = Date.now();
-            const random = Math.random().toString(36).substring(2, 10);
-            // Add cache-busting parameters
-            return baseImageUrl + '&_t=' + timestamp + '&_r=' + random;
-        }
-        
         // Force reload image with cache busting
-        function loadImage() {
+        function loadImage(force = false) {
             if (!isAuthorized) return;
             
-            loadAttempt++;
-            const imageSrc = getCacheBustedUrl();
+            const now = Date.now();
+            
+            // Add timestamp and random parameter to prevent ANY caching
+            const timestamp = now;
+            const randomParam = Math.random().toString(36).substring(7);
+            // Use a cache-busting proxy to force fresh image
+            const imageSrc = imageUrl + '&t=' + timestamp + '&r=' + randomParam;
             
             // Create new image object to force reload
             const newImage = new Image();
-            
             newImage.onload = function() {
+                // Set the image source with cache-busting headers
                 capturedImage.src = imageSrc;
                 capturedImage.style.display = 'block';
                 placeholder.style.display = 'none';
-                lastImageLoad = Date.now();
+                lastImageLoad = now;
                 
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '✓ Live image updated';
@@ -447,25 +443,19 @@
                     
                     statusMessage.className = 'status-message status-error';
                     statusMessage.textContent = '! Image not available';
-                    
-                    // Retry after 3 seconds
-                    setTimeout(() => {
-                        if (isAuthorized) {
-                            loadImage();
-                        }
-                    }, 3000);
                 }
             };
             
+            // Add cache-busting headers by appending timestamp
             newImage.src = imageSrc;
         }
         
         // Handle image click - manual refresh
         imageContainer.addEventListener('click', function() {
             if (isAuthorized) {
+                loadImage(true);
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '↻ Refreshing...';
-                loadImage();
             }
         });
         
@@ -475,21 +465,25 @@
             
             if (enteredCode === validCode) {
                 isAuthorized = true;
-                loadAttempt = 0;
-                loadImage();
+                loadImage(true);
                 
+                // Clear any existing interval
                 if (refreshInterval) clearInterval(refreshInterval);
-                refreshInterval = setInterval(loadImage, 30000);
+                
+                // Set new interval for auto-refresh (30 seconds)
+                refreshInterval = setInterval(() => loadImage(true), 30000);
                 
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '✓ Access granted';
                 
+                // Hide success message after 2 seconds
                 setTimeout(() => {
                     if (statusMessage.textContent === '✓ Access granted') {
                         statusMessage.textContent = '';
                     }
                 }, 2000);
                 
+                // Clear input for security
                 codeInput.value = '';
             } else {
                 isAuthorized = false;
@@ -505,6 +499,7 @@
                 statusMessage.className = 'status-message status-error';
                 statusMessage.textContent = '! Invalid access code';
                 
+                // Clear error message after 3 seconds
                 setTimeout(() => {
                     if (statusMessage.textContent === '! Invalid access code') {
                         statusMessage.textContent = '';
@@ -532,6 +527,23 @@
                 codeInput.value = '';
             }
         });
+        
+        // Prevent viewing source via right-click or keyboard
+        document.onkeydown = function(e) {
+            e = e || window.event;
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                return false;
+            }
+        };
+        
+        // Override console methods to prevent debugging (optional)
+        if (window.console) {
+            console.log = function() {};
+            console.info = function() {};
+            console.warn = function() {};
+            console.error = function() {};
+            console.debug = function() {};
+        }
     </script>
 </body>
 </html>
