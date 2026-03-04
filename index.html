@@ -67,6 +67,26 @@
         .subtitle {
             color: #7f8c8d;
             font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .telegram-link {
+            color: #0088cc;
+            font-weight: 600;
+            text-decoration: none;
+            background: #e8f4fd;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .telegram-link:hover {
+            background: #0088cc;
+            color: white;
+            transform: translateY(-2px);
         }
         
         .code-section {
@@ -275,14 +295,18 @@
                 </svg>
             </div>
             <h1>🎱 Track Your Coins - Live</h1>
-            <div class="subtitle">8 Ball Pool Coin Tracker</div>
+            <div class="subtitle">
+                <a href="https://t.me/pskgamesofficial" class="telegram-link" target="_blank" rel="noopener noreferrer">
+                    📱 Contact on Telegram : pskgamesofficial
+                </a>
+            </div>
         </div>
         
         <div class="code-section">
             <div class="code-label">Enter Access Code</div>
             <div class="code-input-container">
                 <input type="text" class="code-input" id="codeInput" 
-                       placeholder="••••••••" maxlength="8" inputmode="text">
+                       placeholder="••••••••" maxlength="8" inputmode="text" autocomplete="off">
                 <button class="go-button" id="goButton">GO</button>
             </div>
         </div>
@@ -303,28 +327,74 @@
     </div>
     
     <script>
-        const validCode = "CG4VTH0L";
+        // Disable ALL right-click context menu on the entire page
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // Disable all keyboard shortcuts for developer tools
+        document.addEventListener('keydown', function(e) {
+            // Disable F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Disable Ctrl+Shift+I (DevTools)
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Disable Ctrl+Shift+J (Console)
+            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Disable Ctrl+U (View Source)
+            if (e.ctrlKey && (e.key === 'U' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Disable Ctrl+S (Save)
+            if (e.ctrlKey && (e.key === 'S' || e.keyCode === 83)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Disable Ctrl+P (Print)
+            if (e.ctrlKey && (e.key === 'P' || e.keyCode === 80)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Disable dragging images
+        document.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // Disable selection
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // Prevent viewing source via view-source: protocol
+        if (window.location.protocol === 'view-source:') {
+            window.location.href = 'about:blank';
+        }
+        
+        const validCode = "RR3NKHOV";
         // PERMANENT image URL that never changes
         const imageUrl = "https://drive.google.com/thumbnail?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&sz=w1000";
         let isAuthorized = false;
         let refreshInterval = null;
         let lastImageLoad = 0;
-        
-        // Disable right click on image
-        document.addEventListener('contextmenu', function(e) {
-            if (e.target.tagName === 'IMG') {
-                e.preventDefault();
-                return false;
-            }
-        });
-        
-        // Prevent dragging images
-        document.addEventListener('dragstart', function(e) {
-            if (e.target.tagName === 'IMG') {
-                e.preventDefault();
-                return false;
-            }
-        });
         
         // Elements
         const codeInput = document.getElementById('codeInput');
@@ -340,13 +410,16 @@
             
             const now = Date.now();
             
-            // Add timestamp to prevent caching
+            // Add timestamp and random parameter to prevent ANY caching
             const timestamp = now;
-            const imageSrc = imageUrl + '&t=' + timestamp;
+            const randomParam = Math.random().toString(36).substring(7);
+            // Use a cache-busting proxy to force fresh image
+            const imageSrc = imageUrl + '&t=' + timestamp + '&r=' + randomParam;
             
             // Create new image object to force reload
             const newImage = new Image();
             newImage.onload = function() {
+                // Set the image source with cache-busting headers
                 capturedImage.src = imageSrc;
                 capturedImage.style.display = 'block';
                 placeholder.style.display = 'none';
@@ -373,6 +446,7 @@
                 }
             };
             
+            // Add cache-busting headers by appending timestamp
             newImage.src = imageSrc;
         }
         
@@ -409,8 +483,8 @@
                     }
                 }, 2000);
                 
-                // Clear input for security (optional)
-                // codeInput.value = '';
+                // Clear input for security
+                codeInput.value = '';
             } else {
                 isAuthorized = false;
                 capturedImage.style.display = 'none';
@@ -429,6 +503,7 @@
                 setTimeout(() => {
                     if (statusMessage.textContent === '! Invalid access code') {
                         statusMessage.textContent = '';
+                        placeholder.textContent = '✨ Enter code to view live coins';
                     }
                 }, 3000);
             }
@@ -446,21 +521,29 @@
             this.value = this.value.toUpperCase();
         });
         
-        // Check URL parameter for code (optional, for deep linking)
-        const urlParams = new URLSearchParams(window.location.search);
-        const codeParam = urlParams.get('code');
-        if (codeParam) {
-            codeInput.value = codeParam.toUpperCase();
-            checkCode();
-        }
-        
-        // Prevent F12, right-click, etc. on the whole page (optional)
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-                e.preventDefault();
-                return false;
+        // Clear input on page focus for security
+        window.addEventListener('focus', function() {
+            if (!isAuthorized) {
+                codeInput.value = '';
             }
         });
+        
+        // Prevent viewing source via right-click or keyboard
+        document.onkeydown = function(e) {
+            e = e || window.event;
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                return false;
+            }
+        };
+        
+        // Override console methods to prevent debugging (optional)
+        if (window.console) {
+            console.log = function() {};
+            console.info = function() {};
+            console.warn = function() {};
+            console.error = function() {};
+            console.debug = function() {};
+        }
     </script>
 </body>
 </html>
