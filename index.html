@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Capture Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Track Your Coins - Live</title>
     <style>
         * {
             margin: 0;
@@ -13,179 +13,318 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a2a3a 0%, #2c3e50 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 15px;
         }
         
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            width: 90%;
-            max-width: 800px;
-            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 700px;
+            padding: 25px 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .ball-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 15px;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 20px rgba(243, 156, 18, 0.3);
+            border: 3px solid white;
+        }
+        
+        .ball-icon svg {
+            width: 45px;
+            height: 45px;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
         }
         
         h1 {
-            color: #333;
-            margin-bottom: 20px;
+            color: #2c3e50;
             font-size: 28px;
-            text-align: center;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 14px;
         }
         
         .code-section {
-            background: #f7f7f7;
-            border-radius: 10px;
+            background: #f8f9fa;
+            border-radius: 20px;
             padding: 20px;
             margin-bottom: 25px;
+            border: 2px solid #e9ecef;
         }
         
         .code-label {
             font-size: 14px;
-            color: #666;
-            margin-bottom: 5px;
+            color: #495057;
+            margin-bottom: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .code-input-container {
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            gap: 12px;
         }
         
         .code-input {
-            flex: 1;
-            padding: 12px;
-            font-size: 18px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            width: 100%;
+            padding: 18px 15px;
+            font-size: 24px;
+            border: 3px solid #dee2e6;
+            border-radius: 15px;
             font-family: 'Courier New', monospace;
             text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 4px;
+            background: white;
+            transition: all 0.3s ease;
         }
         
         .code-input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #f39c12;
+            box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.1);
         }
         
         .go-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f39c12, #e67e22);
             color: white;
             border: none;
-            border-radius: 8px;
-            padding: 12px 30px;
-            font-size: 16px;
+            border-radius: 15px;
+            padding: 18px 20px;
+            font-size: 20px;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 10px 20px rgba(243, 156, 18, 0.3);
         }
         
         .go-button:hover {
-            transform: scale(1.05);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(243, 156, 18, 0.4);
         }
         
-        .current-code {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #888;
-            text-align: center;
+        .go-button:active {
+            transform: translateY(0);
         }
         
         .image-section {
-            background: #fafafa;
-            border-radius: 10px;
+            background: #f8f9fa;
+            border-radius: 20px;
             padding: 20px;
-            margin-top: 20px;
+            border: 2px solid #e9ecef;
         }
         
         .image-container {
             background: white;
-            border-radius: 10px;
-            padding: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.3s ease;
+            border: 2px solid #dee2e6;
+            overflow: hidden;
         }
         
         .image-container:hover {
-            transform: scale(1.02);
+            transform: scale(1.01);
+            border-color: #f39c12;
         }
         
         .image-container img {
             width: 100%;
             height: auto;
-            border-radius: 5px;
+            border-radius: 10px;
             display: block;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-drag: none;
         }
         
         .placeholder {
             text-align: center;
-            padding: 60px 20px;
-            color: #999;
-            font-size: 16px;
-            background: #f5f5f5;
-            border-radius: 5px;
+            padding: 80px 20px;
+            color: #adb5bd;
+            font-size: 18px;
+            background: #f1f3f5;
+            border-radius: 10px;
+            font-weight: 500;
         }
         
         .status-message {
             margin-top: 15px;
-            padding: 10px;
-            border-radius: 5px;
+            padding: 12px;
+            border-radius: 12px;
             text-align: center;
             font-size: 14px;
+            font-weight: 500;
         }
         
         .status-error {
             background: #fee;
-            color: #c33;
+            color: #e74c3c;
+            border: 1px solid #f5c6cb;
         }
         
         .status-success {
-            background: #efe;
-            color: #3c3;
+            background: #d4edda;
+            color: #27ae60;
+            border: 1px solid #c3e6cb;
         }
         
         .refresh-info {
             margin-top: 15px;
-            font-size: 12px;
-            color: #aaa;
+            font-size: 13px;
+            color: #95a5a6;
             text-align: center;
+            font-style: italic;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #95a5a6;
+            font-size: 12px;
+        }
+        
+        /* Prevent image dragging and context menu */
+        img {
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -o-user-select: none;
+            user-select: none;
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .code-input {
+                font-size: 20px;
+                padding: 15px;
+                letter-spacing: 2px;
+            }
+            
+            .go-button {
+                padding: 15px;
+                font-size: 18px;
+            }
+            
+            .ball-icon {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .ball-icon svg {
+                width: 35px;
+                height: 35px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📸 Image Capture Viewer</h1>
+        <div class="header">
+            <div class="ball-icon">
+                <svg viewBox="0 0 24 24" fill="white">
+                    <circle cx="12" cy="12" r="10" fill="white"/>
+                    <path d="M12 2 L12 12 L18 8 L12 2" fill="#f39c12" opacity="0.8"/>
+                    <path d="M12 12 L18 8 L22 14 L12 12" fill="#e67e22" opacity="0.8"/>
+                    <circle cx="8" cy="8" r="2" fill="#2c3e50"/>
+                    <circle cx="16" cy="10" r="1.5" fill="#2c3e50"/>
+                </svg>
+            </div>
+            <h1>🎱 Track Your Coins - Live</h1>
+            <div class="subtitle">8 Ball Pool Coin Tracker</div>
+        </div>
         
         <div class="code-section">
-            <div class="code-label">Enter Access Code:</div>
+            <div class="code-label">Enter Access Code</div>
             <div class="code-input-container">
                 <input type="text" class="code-input" id="codeInput" 
-                       placeholder="Enter 8-character code" maxlength="8">
+                       placeholder="••••••••" maxlength="8" inputmode="text">
                 <button class="go-button" id="goButton">GO</button>
             </div>
-            <div class="current-code">Valid Code: <strong>JQRTSXWT</strong></div>
         </div>
         
         <div class="image-section">
-            <div class="image-container" id="imageContainer" onclick="refreshImage()">
-                <div class="placeholder" id="placeholder">Enter code to view image</div>
-                <img id="capturedImage" src="" alt="Captured Image" style="display: none;">
+            <div class="image-container" id="imageContainer">
+                <div class="placeholder" id="placeholder">✨ Enter code to view live coins</div>
+                <img id="capturedImage" src="" alt="Live Coin Tracker" style="display: none;">
             </div>
             
             <div id="statusMessage" class="status-message"></div>
-            <div class="refresh-info">Click image to refresh | Auto-refreshes every 30s</div>
+            <div class="refresh-info">🔄 Auto-refreshes every 30 seconds | Click image to refresh</div>
+        </div>
+        
+        <div class="footer">
+            Secure Live Tracker • Code changes on restart
         </div>
     </div>
     
     <script>
-        const validCode = "JQRTSXWT";
+        const validCode = "CG4VTH0L";
         // PERMANENT image URL that never changes
         const imageUrl = "https://drive.google.com/thumbnail?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&sz=w1000";
         let isAuthorized = false;
         let refreshInterval = null;
+        let lastImageLoad = 0;
+        
+        // Disable right click on image
+        document.addEventListener('contextmenu', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Prevent dragging images
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                return false;
+            }
+        });
         
         // Elements
         const codeInput = document.getElementById('codeInput');
@@ -193,38 +332,58 @@
         const placeholder = document.getElementById('placeholder');
         const capturedImage = document.getElementById('capturedImage');
         const statusMessage = document.getElementById('statusMessage');
+        const imageContainer = document.getElementById('imageContainer');
         
-        // Load image function
-        function loadImage() {
+        // Force reload image with cache busting
+        function loadImage(force = false) {
             if (!isAuthorized) return;
             
+            const now = Date.now();
+            
             // Add timestamp to prevent caching
-            const timestamp = new Date().getTime();
-            capturedImage.src = imageUrl + '&' + timestamp;
-            capturedImage.style.display = 'block';
-            placeholder.style.display = 'none';
+            const timestamp = now;
+            const imageSrc = imageUrl + '&t=' + timestamp;
             
-            statusMessage.className = 'status-message status-success';
-            statusMessage.textContent = 'Image loaded successfully';
+            // Create new image object to force reload
+            const newImage = new Image();
+            newImage.onload = function() {
+                capturedImage.src = imageSrc;
+                capturedImage.style.display = 'block';
+                placeholder.style.display = 'none';
+                lastImageLoad = now;
+                
+                statusMessage.className = 'status-message status-success';
+                statusMessage.textContent = '✓ Live image updated';
+                
+                setTimeout(() => {
+                    if (statusMessage.textContent === '✓ Live image updated') {
+                        statusMessage.textContent = '';
+                    }
+                }, 2000);
+            };
             
-            setTimeout(() => {
-                if (statusMessage.textContent.includes('success')) {
-                    statusMessage.textContent = '';
+            newImage.onerror = function() {
+                if (isAuthorized) {
+                    capturedImage.style.display = 'none';
+                    placeholder.style.display = 'block';
+                    placeholder.textContent = '⏳ Waiting for image...';
+                    
+                    statusMessage.className = 'status-message status-error';
+                    statusMessage.textContent = '! Image not available';
                 }
-            }, 3000);
+            };
+            
+            newImage.src = imageSrc;
         }
         
-        // Handle image error
-        capturedImage.onerror = function() {
+        // Handle image click - manual refresh
+        imageContainer.addEventListener('click', function() {
             if (isAuthorized) {
-                capturedImage.style.display = 'none';
-                placeholder.style.display = 'block';
-                placeholder.textContent = 'No image available yet';
-                
-                statusMessage.className = 'status-message status-error';
-                statusMessage.textContent = 'Image not found';
+                loadImage(true);
+                statusMessage.className = 'status-message status-success';
+                statusMessage.textContent = '↻ Refreshing...';
             }
-        };
+        });
         
         // Check code function
         function checkCode() {
@@ -232,24 +391,31 @@
             
             if (enteredCode === validCode) {
                 isAuthorized = true;
-                loadImage();
+                loadImage(true);
                 
+                // Clear any existing interval
                 if (refreshInterval) clearInterval(refreshInterval);
-                refreshInterval = setInterval(loadImage, 30000);
+                
+                // Set new interval for auto-refresh (30 seconds)
+                refreshInterval = setInterval(() => loadImage(true), 30000);
                 
                 statusMessage.className = 'status-message status-success';
-                statusMessage.textContent = 'Access granted';
+                statusMessage.textContent = '✓ Access granted';
                 
+                // Hide success message after 2 seconds
                 setTimeout(() => {
-                    if (statusMessage.textContent === 'Access granted') {
+                    if (statusMessage.textContent === '✓ Access granted') {
                         statusMessage.textContent = '';
                     }
-                }, 3000);
+                }, 2000);
+                
+                // Clear input for security (optional)
+                // codeInput.value = '';
             } else {
                 isAuthorized = false;
                 capturedImage.style.display = 'none';
                 placeholder.style.display = 'block';
-                placeholder.textContent = 'Invalid code - enter correct code';
+                placeholder.textContent = '❌ Invalid code - access denied';
                 
                 if (refreshInterval) {
                     clearInterval(refreshInterval);
@@ -257,14 +423,14 @@
                 }
                 
                 statusMessage.className = 'status-message status-error';
-                statusMessage.textContent = 'Invalid access code';
-            }
-        }
-        
-        // Refresh image function (manual)
-        function refreshImage() {
-            if (isAuthorized) {
-                loadImage();
+                statusMessage.textContent = '! Invalid access code';
+                
+                // Clear error message after 3 seconds
+                setTimeout(() => {
+                    if (statusMessage.textContent === '! Invalid access code') {
+                        statusMessage.textContent = '';
+                    }
+                }, 3000);
             }
         }
         
@@ -278,6 +444,22 @@
         
         codeInput.addEventListener('input', function() {
             this.value = this.value.toUpperCase();
+        });
+        
+        // Check URL parameter for code (optional, for deep linking)
+        const urlParams = new URLSearchParams(window.location.search);
+        const codeParam = urlParams.get('code');
+        if (codeParam) {
+            codeInput.value = codeParam.toUpperCase();
+            checkCode();
+        }
+        
+        // Prevent F12, right-click, etc. on the whole page (optional)
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                e.preventDefault();
+                return false;
+            }
         });
     </script>
 </body>
