@@ -389,12 +389,13 @@
             window.location.href = 'about:blank';
         }
         
-        const validCode = "RR3NKHOV";
-        // PERMANENT image URL that never changes
-        const imageUrl = "https://drive.google.com/thumbnail?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&sz=w1000";
+        const validCode = "RQRPE1QQ";
+        // Base image URL without any parameters
+        const baseImageUrl = "https://drive.google.com/uc?export=view&id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU";
         let isAuthorized = false;
         let refreshInterval = null;
         let lastImageLoad = 0;
+        let loadAttempt = 0;
         
         // Elements
         const codeInput = document.getElementById('codeInput');
@@ -404,26 +405,44 @@
         const statusMessage = document.getElementById('statusMessage');
         const imageContainer = document.getElementById('imageContainer');
         
-        // Force reload image with cache busting
+        // Function to generate a truly unique cache-busting URL
+        function getCacheBustedUrl() {
+            // Use multiple random parameters to ensure Google treats it as a new request
+            const timestamp = Date.now();
+            const random1 = Math.random().toString(36).substring(2, 15);
+            const random2 = Math.random().toString(36).substring(2, 15);
+            const random3 = Math.random().toString(36).substring(2, 15);
+            
+            // Add multiple cache-busting parameters
+            return baseImageUrl + '&cache=' + timestamp + '&r1=' + random1 + '&r2=' + random2 + '&r3=' + random3 + '&nocache=' + Math.random();
+        }
+        
+        // Force reload image with aggressive cache busting
         function loadImage(force = false) {
             if (!isAuthorized) return;
             
-            const now = Date.now();
-            
-            // Add timestamp and random parameter to prevent ANY caching
-            const timestamp = now;
-            const randomParam = Math.random().toString(36).substring(7);
-            // Use a cache-busting proxy to force fresh image
-            const imageSrc = imageUrl + '&t=' + timestamp + '&r=' + randomParam;
+            loadAttempt++;
+            const imageSrc = getCacheBustedUrl();
             
             // Create new image object to force reload
             const newImage = new Image();
+            
+            // Set a timeout to detect if image is taking too long
+            const timeoutId = setTimeout(() => {
+                if (isAuthorized) {
+                    // Try again with different parameters if timeout
+                    console.log('Image load timeout, retrying...');
+                    loadImage(true);
+                }
+            }, 10000);
+            
             newImage.onload = function() {
+                clearTimeout(timeoutId);
                 // Set the image source with cache-busting headers
                 capturedImage.src = imageSrc;
                 capturedImage.style.display = 'block';
                 placeholder.style.display = 'none';
-                lastImageLoad = now;
+                lastImageLoad = Date.now();
                 
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '✓ Live image updated';
@@ -433,9 +452,13 @@
                         statusMessage.textContent = '';
                     }
                 }, 2000);
+                
+                // Log successful load for debugging
+                console.log('Image loaded successfully, attempt:', loadAttempt);
             };
             
             newImage.onerror = function() {
+                clearTimeout(timeoutId);
                 if (isAuthorized) {
                     capturedImage.style.display = 'none';
                     placeholder.style.display = 'block';
@@ -443,19 +466,26 @@
                     
                     statusMessage.className = 'status-message status-error';
                     statusMessage.textContent = '! Image not available';
+                    
+                    // Retry after 2 seconds
+                    setTimeout(() => {
+                        if (isAuthorized) {
+                            loadImage(true);
+                        }
+                    }, 2000);
                 }
             };
             
-            // Add cache-busting headers by appending timestamp
+            // Add a random query parameter that changes with each request
             newImage.src = imageSrc;
         }
         
-        // Handle image click - manual refresh
+        // Handle image click - manual refresh with force
         imageContainer.addEventListener('click', function() {
             if (isAuthorized) {
-                loadImage(true);
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '↻ Refreshing...';
+                loadImage(true);
             }
         });
         
@@ -465,13 +495,20 @@
             
             if (enteredCode === validCode) {
                 isAuthorized = true;
+                loadAttempt = 0; // Reset attempt counter
                 loadImage(true);
                 
                 // Clear any existing interval
                 if (refreshInterval) clearInterval(refreshInterval);
                 
                 // Set new interval for auto-refresh (30 seconds)
-                refreshInterval = setInterval(() => loadImage(true), 30000);
+                // Use a more aggressive refresh strategy
+                refreshInterval = setInterval(() => {
+                    if (isAuthorized) {
+                        // Force a complete reload with new cache busting
+                        loadImage(true);
+                    }
+                }, 30000);
                 
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '✓ Access granted';
@@ -544,6 +581,14 @@
             console.error = function() {};
             console.debug = function() {};
         }
+        
+        // Add a before unload event to clear cache when leaving
+        window.addEventListener('beforeunload', function() {
+            if (isAuthorized) {
+                // Force a fresh load when returning
+                sessionStorage.removeItem('lastImage');
+            }
+        });
     </script>
 </body>
 </html>
