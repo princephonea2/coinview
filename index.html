@@ -442,17 +442,25 @@
             window.location.href = 'about:blank';
         }
         
-        const validCode = "H26933AI";
-        const sessionId = "1772735193";
+        // These values are embedded in the HTML and will change when GitHub updates
+        const validCode = "OARAC6O3";
+        const versionId = "1772742956";
         
-        // Check if this is a new session (HTML was updated)
-        const lastSessionId = sessionStorage.getItem('trackerSessionId');
-        const wasAuthorized = sessionStorage.getItem('trackerAuthorized') === 'true';
+        // Check if this is a new version (HTML was updated on GitHub)
+        const storedVersion = localStorage.getItem('trackerVersion');
+        const wasAuthorized = localStorage.getItem('trackerAuthorized') === 'true';
+        const storedCode = localStorage.getItem('trackerCode');
         
-        // If session changed, clear authorization
-        if (lastSessionId !== sessionId) {
-            sessionStorage.removeItem('trackerAuthorized');
-            sessionStorage.setItem('trackerSessionId', sessionId);
+        // CRITICAL FIX: If version changed OR stored code doesn't match current validCode, force re-authorization
+        if (storedVersion !== versionId || storedCode !== validCode) {
+            // Clear all stored data - this forces user to re-enter code
+            localStorage.removeItem('trackerAuthorized');
+            localStorage.removeItem('trackerVersion');
+            localStorage.removeItem('trackerCode');
+            
+            // Update to new version
+            localStorage.setItem('trackerVersion', versionId);
+            localStorage.setItem('trackerCode', validCode);
         }
         
         // Multiple URL formats to try (hidden from user)
@@ -463,7 +471,12 @@
         "https://drive.google.com/uc?export=view&id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU"
     ];
         
-        let isAuthorized = wasAuthorized && lastSessionId === sessionId ? true : false;
+        // Check if user was previously authorized with the CURRENT version and code
+        let isAuthorized = false;
+        if (storedVersion === versionId && storedCode === validCode && wasAuthorized) {
+            isAuthorized = true;
+        }
+        
         let refreshInterval = null;
         let currentUrlIndex = 0;
         let loadAttempt = 0;
@@ -572,8 +585,8 @@
                 loadAttempt = 0;
                 refreshButton.style.display = 'inline-flex';
                 
-                // Save authorization in session storage
-                sessionStorage.setItem('trackerAuthorized', 'true');
+                // Save authorization in localStorage (persists across page refreshes)
+                localStorage.setItem('trackerAuthorized', 'true');
                 
                 tryLoadImage(0);
                 
@@ -601,8 +614,8 @@
                 placeholder.textContent = '❌ Invalid code - access denied';
                 refreshButton.style.display = 'none';
                 
-                // Clear authorization from session storage
-                sessionStorage.removeItem('trackerAuthorized');
+                // Clear authorization from localStorage
+                localStorage.removeItem('trackerAuthorized');
                 
                 if (refreshInterval) {
                     clearInterval(refreshInterval);
