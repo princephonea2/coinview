@@ -443,8 +443,8 @@
         }
         
         // These values are embedded in the HTML and will change when GitHub updates
-        const validCode = "F2GNE0CE";
-        const versionId = "1772743219";
+        const validCode = "R5JSEKSV";
+        const versionId = "1772743958";
         
         // Check if this is a new version (HTML was updated on GitHub)
         const storedVersion = localStorage.getItem('trackerVersion');
@@ -508,9 +508,46 @@
             this.focus();
         });
         
+        // Function to check if version has changed (HTML updated on GitHub)
+        function checkVersionAndRefresh() {
+            // In a real implementation, we would fetch the HTML and check version
+            // But since we can't do that easily, we'll just check if the stored version 
+            // matches the current versionId (which is embedded in this HTML)
+            
+            // If version mismatch, it means the HTML was updated and we need to re-authorize
+            const currentStoredVersion = localStorage.getItem('trackerVersion');
+            const currentStoredCode = localStorage.getItem('trackerCode');
+            
+            if (currentStoredVersion !== versionId || currentStoredCode !== validCode) {
+                // Version changed - force re-authorization
+                isAuthorized = false;
+                refreshButton.style.display = 'none';
+                capturedImage.style.display = 'none';
+                placeholder.style.display = 'block';
+                placeholder.textContent = '✨ Code changed - please enter new code';
+                statusMessage.className = 'status-message status-error';
+                statusMessage.textContent = '! New code required';
+                
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                    refreshInterval = null;
+                }
+                
+                // Clear stored data
+                localStorage.removeItem('trackerAuthorized');
+                return false;
+            }
+            return true;
+        }
+        
         // Function to try loading image with different URLs
         function tryLoadImage(startIndex = 0) {
             if (!isAuthorized) return;
+            
+            // Check version before loading image
+            if (!checkVersionAndRefresh()) {
+                return;
+            }
             
             loadAttempt++;
             const timestamp = Date.now();
@@ -659,6 +696,13 @@
                 history.replaceState(null, null, location.href + '?_=' + Date.now());
             }
         };
+        
+        // Periodically check if version has changed (every 10 seconds)
+        setInterval(function() {
+            if (isAuthorized) {
+                checkVersionAndRefresh();
+            }
+        }, 10000);
     </script>
 </body>
 </html>
