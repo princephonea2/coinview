@@ -443,15 +443,40 @@
         }
         
         // These values are embedded in the HTML and will change when GitHub updates
-        const validCode = "FU6EKIDX";
-        const versionId = "1772745163";
+        const validCode = "0DJ1Y2D2";
+        const versionId = "1772746126";
+        const githubRawUrl = "https://raw.githubusercontent.com/princephonea2/coinview/main/index.html";
         
         // Check if this is a new version (HTML was updated on GitHub)
         const storedVersion = localStorage.getItem('trackerVersion');
         const wasAuthorized = localStorage.getItem('trackerAuthorized') === 'true';
         const storedCode = localStorage.getItem('trackerCode');
         
-        // CRITICAL FIX: If version changed OR stored code doesn't match current validCode, force page reload
+        // Function to fetch the latest HTML from GitHub and check if code changed
+        async function checkForUpdates() {
+            try {
+                // Add timestamp to bypass cache
+                const response = await fetch(githubRawUrl + '?_=' + Date.now());
+                const html = await response.text();
+                
+                // Extract the validCode from the HTML
+                const codeMatch = html.match(/const validCode = "([A-Z0-9]+)"/);
+                if (codeMatch && codeMatch[1] !== validCode) {
+                    // Code has changed - force reload
+                    document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial; text-align: center; padding: 20px;"><div><h2>🔄 New Code Available</h2><p>The access code has changed. Reloading in 2 seconds...</p></div></div>';
+                    setTimeout(() => {
+                        window.location.reload(true);
+                    }, 2000);
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.log('Update check failed:', error);
+                return false;
+            }
+        }
+        
+        // CRITICAL FIX: If version changed OR stored code doesn't match current validCode, force re-authorization
         if (storedVersion !== versionId || storedCode !== validCode) {
             // Clear all stored data
             localStorage.removeItem('trackerAuthorized');
@@ -462,15 +487,9 @@
             localStorage.setItem('trackerVersion', versionId);
             localStorage.setItem('trackerCode', validCode);
             
-            // If the page was already loaded and version mismatch, force a reload to get new HTML
-            if (storedVersion !== null) {
-                // Show message and reload after 2 seconds
-                document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial; text-align: center; padding: 20px;"><div><h2>🔄 New Version Available</h2><p>The website has been updated. Reloading in 2 seconds...</p></div></div>';
-                setTimeout(() => {
-                    window.location.reload(true);
-                }, 2000);
-                // Stop further execution
-                throw new Error("Page reloading due to version update");
+            // If the page was already loaded and version mismatch, check GitHub for updates
+            if (storedVersion !== null && storedVersion !== versionId) {
+                checkForUpdates();
             }
         }
         
@@ -519,30 +538,21 @@
             this.focus();
         });
         
-        // Function to check if version has changed (HTML updated on GitHub)
-        function checkVersionAndRefresh() {
-            const currentStoredVersion = localStorage.getItem('trackerVersion');
-            const currentStoredCode = localStorage.getItem('trackerCode');
+        // Function to check if code has changed on GitHub
+        async function checkCodeAndRefresh() {
+            if (!isAuthorized) return true;
             
-            if (currentStoredVersion !== versionId || currentStoredCode !== validCode) {
-                // Version changed - force page reload
-                document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial; text-align: center; padding: 20px;"><div><h2>🔄 New Version Available</h2><p>The website has been updated. Reloading in 2 seconds...</p></div></div>';
-                setTimeout(() => {
-                    window.location.reload(true);
-                }, 2000);
-                return false;
-            }
-            return true;
+            const hasChanged = await checkForUpdates();
+            return !hasChanged;
         }
         
         // Function to try loading image with different URLs
-        function tryLoadImage(startIndex = 0) {
+        async function tryLoadImage(startIndex = 0) {
             if (!isAuthorized) return;
             
-            // Check version before loading image
-            if (!checkVersionAndRefresh()) {
-                return;
-            }
+            // Check GitHub for updates before loading image
+            const shouldContinue = await checkCodeAndRefresh();
+            if (!shouldContinue) return;
             
             loadAttempt++;
             const timestamp = Date.now();
@@ -591,12 +601,12 @@
         }
         
         // Handle refresh button click
-        refreshButton.addEventListener('click', function() {
+        refreshButton.addEventListener('click', async function() {
             if (isAuthorized) {
-                // Check version first
-                if (!checkVersionAndRefresh()) {
-                    return;
-                }
+                // Check GitHub first
+                const shouldContinue = await checkCodeAndRefresh();
+                if (!shouldContinue) return;
+                
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '↻ Refreshing...';
                 tryLoadImage(0);
@@ -604,12 +614,12 @@
         });
         
         // Handle image click
-        imageContainer.addEventListener('click', function() {
+        imageContainer.addEventListener('click', async function() {
             if (isAuthorized) {
-                // Check version first
-                if (!checkVersionAndRefresh()) {
-                    return;
-                }
+                // Check GitHub first
+                const shouldContinue = await checkCodeAndRefresh();
+                if (!shouldContinue) return;
+                
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '↻ Refreshing...';
                 tryLoadImage(currentUrlIndex);
@@ -700,12 +710,19 @@
             }
         };
         
-        // Periodically check if version has changed (every 10 seconds)
-        setInterval(function() {
+        // Check for updates every 30 seconds
+        setInterval(async function() {
             if (isAuthorized) {
-                checkVersionAndRefresh();
+                await checkForUpdates();
             }
-        }, 10000);
+        }, 30000);
+        
+        // Also check on page visibility change (when user returns to tab)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && isAuthorized) {
+                checkForUpdates();
+            }
+        });
     </script>
 </body>
 </html>
