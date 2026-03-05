@@ -366,12 +366,12 @@
             <!-- Manual Refresh Button -->
             <div class="refresh-button-container">
                 <button class="refresh-button" id="refreshButton" style="display: none;">
-                    <span>🔄</span> Force Refresh Image
+                    <span>🔄</span> Refresh
                 </button>
             </div>
             
             <div id="statusMessage" class="status-message"></div>
-            <div class="refresh-info">🔄 Auto-refreshes every 30 seconds | Click button to force refresh</div>
+            <div class="refresh-info">🔄 Auto-refreshes every 30 seconds | Click button to refresh</div>
         </div>
         
         <div class="footer">
@@ -442,7 +442,18 @@
             window.location.href = 'about:blank';
         }
         
-        const validCode = "E75KPSAT";
+        const validCode = "CPLQKA7J";
+        const sessionId = "1772727573";
+        
+        // Check if this is a new session (HTML was updated)
+        const lastSessionId = sessionStorage.getItem('trackerSessionId');
+        const wasAuthorized = sessionStorage.getItem('trackerAuthorized') === 'true';
+        
+        // If session changed, clear authorization
+        if (lastSessionId !== sessionId) {
+            sessionStorage.removeItem('trackerAuthorized');
+            sessionStorage.setItem('trackerSessionId', sessionId);
+        }
         
         // Multiple URL formats to try (hidden from user)
         const imageUrls = [
@@ -452,7 +463,7 @@
         "https://drive.google.com/uc?export=view&id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU"
     ];
         
-        let isAuthorized = false;
+        let isAuthorized = wasAuthorized && lastSessionId === sessionId ? true : false;
         let refreshInterval = null;
         let currentUrlIndex = 0;
         let loadAttempt = 0;
@@ -465,6 +476,19 @@
         const statusMessage = document.getElementById('statusMessage');
         const imageContainer = document.getElementById('imageContainer');
         const refreshButton = document.getElementById('refreshButton');
+        
+        // If previously authorized, restore session
+        if (isAuthorized) {
+            refreshButton.style.display = 'inline-flex';
+            tryLoadImage(0);
+            
+            // Restore auto-refresh
+            refreshInterval = setInterval(() => {
+                if (isAuthorized) {
+                    tryLoadImage(currentUrlIndex);
+                }
+            }, 30000);
+        }
         
         // Enable paste on mobile
         codeInput.addEventListener('touchstart', function() {
@@ -547,6 +571,10 @@
                 isAuthorized = true;
                 loadAttempt = 0;
                 refreshButton.style.display = 'inline-flex';
+                
+                // Save authorization in session storage
+                sessionStorage.setItem('trackerAuthorized', 'true');
+                
                 tryLoadImage(0);
                 
                 if (refreshInterval) clearInterval(refreshInterval);
@@ -572,6 +600,9 @@
                 placeholder.style.display = 'block';
                 placeholder.textContent = '❌ Invalid code - access denied';
                 refreshButton.style.display = 'none';
+                
+                // Clear authorization from session storage
+                sessionStorage.removeItem('trackerAuthorized');
                 
                 if (refreshInterval) {
                     clearInterval(refreshInterval);
