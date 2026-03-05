@@ -442,10 +442,20 @@
             window.location.href = 'about:blank';
         }
         
-        const validCode = "O3LF8YP2";
-        const baseImageUrl = "https://lh3.googleusercontent.com/d/1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU=w1000";
+        const validCode = "W9U9LU9E";
+        
+        // Multiple URL formats to try (hidden from user)
+        const imageUrls = [
+        "https://lh3.googleusercontent.com/d/1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU=w1000",
+        "https://drive.usercontent.google.com/download?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&export=view",
+        "https://drive.google.com/thumbnail?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&sz=w1000",
+        "https://drive.google.com/uc?export=view&id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU"
+    ];
+        
         let isAuthorized = false;
         let refreshInterval = null;
+        let currentUrlIndex = 0;
+        let loadAttempt = 0;
         
         // Elements
         const codeInput = document.getElementById('codeInput');
@@ -461,19 +471,25 @@
             this.focus();
         });
         
-        // Function to generate a completely unique URL that forces a fresh load
-        function getForceRefreshUrl() {
-            const timestamp = Date.now();
-            const random1 = Math.random().toString(36).substring(2, 15);
-            const random2 = Math.random().toString(36).substring(2, 15);
-            return baseImageUrl + '&_cb=' + timestamp + '&_r1=' + random1 + '&_r2=' + random2;
-        }
-        
-        // Force reload image by creating a new Image object
-        function loadImage() {
+        // Function to try loading image with different URLs
+        function tryLoadImage(startIndex = 0) {
             if (!isAuthorized) return;
             
-            const imageSrc = getForceRefreshUrl();
+            loadAttempt++;
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2, 15);
+            
+            if (startIndex >= imageUrls.length) {
+                // All URLs tried, give up
+                placeholder.textContent = '❌ Image not available';
+                statusMessage.className = 'status-message status-error';
+                statusMessage.textContent = '! Image not available';
+                return;
+            }
+            
+            let baseUrl = imageUrls[startIndex];
+            const separator = baseUrl.includes('?') ? '&' : '?';
+            const imageUrl = baseUrl + separator + '_cb=' + timestamp + '&_r=' + random;
             
             const newImage = new Image();
             
@@ -481,6 +497,7 @@
                 capturedImage.src = this.src;
                 capturedImage.style.display = 'block';
                 placeholder.style.display = 'none';
+                currentUrlIndex = startIndex;
                 
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '✓ Image updated';
@@ -493,23 +510,15 @@
             };
             
             newImage.onerror = function() {
-                if (isAuthorized) {
-                    capturedImage.style.display = 'none';
-                    placeholder.style.display = 'block';
-                    placeholder.textContent = '⏳ Waiting for image...';
-                    
-                    statusMessage.className = 'status-message status-error';
-                    statusMessage.textContent = '! Image not available';
-                    
-                    setTimeout(() => {
-                        if (isAuthorized) {
-                            loadImage();
-                        }
-                    }, 3000);
-                }
+                // Try next URL silently
+                setTimeout(() => {
+                    if (isAuthorized) {
+                        tryLoadImage(startIndex + 1);
+                    }
+                }, 500);
             };
             
-            newImage.src = imageSrc;
+            newImage.src = imageUrl;
         }
         
         // Handle refresh button click
@@ -517,7 +526,7 @@
             if (isAuthorized) {
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '↻ Refreshing...';
-                loadImage();
+                tryLoadImage(0);
             }
         });
         
@@ -526,7 +535,7 @@
             if (isAuthorized) {
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '↻ Refreshing...';
-                loadImage();
+                tryLoadImage(currentUrlIndex);
             }
         });
         
@@ -536,11 +545,16 @@
             
             if (enteredCode === validCode) {
                 isAuthorized = true;
+                loadAttempt = 0;
                 refreshButton.style.display = 'inline-flex';
-                loadImage();
+                tryLoadImage(0);
                 
                 if (refreshInterval) clearInterval(refreshInterval);
-                refreshInterval = setInterval(loadImage, 30000);
+                refreshInterval = setInterval(() => {
+                    if (isAuthorized) {
+                        tryLoadImage(currentUrlIndex);
+                    }
+                }, 30000);
                 
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '✓ Access granted';
