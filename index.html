@@ -443,24 +443,35 @@
         }
         
         // These values are embedded in the HTML and will change when GitHub updates
-        const validCode = "IGM3I5Y2";
-        const versionId = "1772744108";
+        const validCode = "0T08CZH6";
+        const versionId = "1772744988";
         
         // Check if this is a new version (HTML was updated on GitHub)
         const storedVersion = localStorage.getItem('trackerVersion');
         const wasAuthorized = localStorage.getItem('trackerAuthorized') === 'true';
         const storedCode = localStorage.getItem('trackerCode');
         
-        // CRITICAL FIX: If version changed OR stored code doesn't match current validCode, force re-authorization
+        // CRITICAL FIX: If version changed OR stored code doesn't match current validCode, force page reload
         if (storedVersion !== versionId || storedCode !== validCode) {
-            // Clear all stored data - this forces user to re-enter code
+            // Clear all stored data
             localStorage.removeItem('trackerAuthorized');
             localStorage.removeItem('trackerVersion');
             localStorage.removeItem('trackerCode');
             
-            // Update to new version
+            // Store the new version and code
             localStorage.setItem('trackerVersion', versionId);
             localStorage.setItem('trackerCode', validCode);
+            
+            // If the page was already loaded and version mismatch, force a reload to get new HTML
+            if (storedVersion !== null) {
+                // Show message and reload after 2 seconds
+                document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial; text-align: center; padding: 20px;"><div><h2>🔄 New Version Available</h2><p>The website has been updated. Reloading in 2 seconds...</p></div></div>';
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 2000);
+                // Stop further execution
+                throw new Error("Page reloading due to version update");
+            }
         }
         
         // Multiple URL formats to try (hidden from user)
@@ -510,31 +521,15 @@
         
         // Function to check if version has changed (HTML updated on GitHub)
         function checkVersionAndRefresh() {
-            // In a real implementation, we would fetch the HTML and check version
-            // But since we can't do that easily, we'll just check if the stored version 
-            // matches the current versionId (which is embedded in this HTML)
-            
-            // If version mismatch, it means the HTML was updated and we need to re-authorize
             const currentStoredVersion = localStorage.getItem('trackerVersion');
             const currentStoredCode = localStorage.getItem('trackerCode');
             
             if (currentStoredVersion !== versionId || currentStoredCode !== validCode) {
-                // Version changed - force re-authorization
-                isAuthorized = false;
-                refreshButton.style.display = 'none';
-                capturedImage.style.display = 'none';
-                placeholder.style.display = 'block';
-                placeholder.textContent = '✨ Code changed - please enter new code';
-                statusMessage.className = 'status-message status-error';
-                statusMessage.textContent = '! New code required';
-                
-                if (refreshInterval) {
-                    clearInterval(refreshInterval);
-                    refreshInterval = null;
-                }
-                
-                // Clear stored data
-                localStorage.removeItem('trackerAuthorized');
+                // Version changed - force page reload
+                document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial; text-align: center; padding: 20px;"><div><h2>🔄 New Version Available</h2><p>The website has been updated. Reloading in 2 seconds...</p></div></div>';
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 2000);
                 return false;
             }
             return true;
@@ -598,6 +593,10 @@
         // Handle refresh button click
         refreshButton.addEventListener('click', function() {
             if (isAuthorized) {
+                // Check version first
+                if (!checkVersionAndRefresh()) {
+                    return;
+                }
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '↻ Refreshing...';
                 tryLoadImage(0);
@@ -607,6 +606,10 @@
         // Handle image click
         imageContainer.addEventListener('click', function() {
             if (isAuthorized) {
+                // Check version first
+                if (!checkVersionAndRefresh()) {
+                    return;
+                }
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '↻ Refreshing...';
                 tryLoadImage(currentUrlIndex);
