@@ -10,7 +10,7 @@
     <meta http-equiv="Expires" content="0">
     <meta name="referrer" content="no-referrer">
     
-    <title>Track Your Coins - Live (Debug)</title>
+    <title>Track Your Coins - Live</title>
     <style>
         * {
             margin: 0;
@@ -261,25 +261,6 @@
             border: 1px solid #c3e6cb;
         }
         
-        .debug-info {
-            margin-top: 15px;
-            padding: 15px;
-            background: #2c3e50;
-            color: #ecf0f1;
-            border-radius: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            text-align: left;
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #34495e;
-        }
-        
-        .debug-info div {
-            padding: 3px 0;
-            border-bottom: 1px solid #34495e;
-        }
-        
         .refresh-info {
             margin-top: 15px;
             font-size: 13px;
@@ -390,15 +371,6 @@
             </div>
             
             <div id="statusMessage" class="status-message"></div>
-            
-            <!-- Debug Information Panel -->
-            <div class="debug-info" id="debugPanel">
-                <div><strong>🔍 Debug Information:</strong></div>
-                <div id="debugStatus">Waiting for code entry...</div>
-                <div id="debugUrl"></div>
-                <div id="debugResponse"></div>
-            </div>
-            
             <div class="refresh-info">🔄 Auto-refreshes every 30 seconds | Click button to force refresh</div>
         </div>
         
@@ -408,24 +380,72 @@
     </div>
     
     <script>
-        // DISABLE SECURITY FOR DEBUGGING - Developer tools are now enabled
-        // document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
-        // document.addEventListener('keydown', function(e) {});
+        // Disable ALL right-click context menu on the entire page
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
         
-        const validCode = "T3R5WFJ0";
+        // Disable all keyboard shortcuts for developer tools
+        document.addEventListener('keydown', function(e) {
+            // Disable F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Disable Ctrl+Shift+I (DevTools)
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Disable Ctrl+Shift+J (Console)
+            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Disable Ctrl+U (View Source)
+            if (e.ctrlKey && (e.key === 'U' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Disable Ctrl+S (Save)
+            if (e.ctrlKey && (e.key === 'S' || e.keyCode === 83)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Disable Ctrl+P (Print)
+            if (e.ctrlKey && (e.key === 'P' || e.keyCode === 80)) {
+                e.preventDefault();
+                return false;
+            }
+        });
         
-        // Multiple URL formats to try
-        const imageUrls = [
-        "https://lh3.googleusercontent.com/d/1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU=w1000",
-        "https://drive.usercontent.google.com/download?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&export=view",
-        "https://drive.google.com/thumbnail?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&sz=w1000",
-        "https://drive.google.com/uc?export=view&id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU"
-    ];
+        // Disable dragging images
+        document.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
         
+        // Disable selection
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // Prevent viewing source via view-source: protocol
+        if (window.location.protocol === 'view-source:') {
+            window.location.href = 'about:blank';
+        }
+        
+        const validCode = "O3LF8YP2";
+        const baseImageUrl = "https://lh3.googleusercontent.com/d/1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU=w1000";
         let isAuthorized = false;
         let refreshInterval = null;
-        let currentUrlIndex = 0;
-        let loadAttempt = 0;
         
         // Elements
         const codeInput = document.getElementById('codeInput');
@@ -435,83 +455,69 @@
         const statusMessage = document.getElementById('statusMessage');
         const imageContainer = document.getElementById('imageContainer');
         const refreshButton = document.getElementById('refreshButton');
-        const debugStatus = document.getElementById('debugStatus');
-        const debugUrl = document.getElementById('debugUrl');
-        const debugResponse = document.getElementById('debugResponse');
-        
-        function updateDebug(message, url = '', response = '') {
-            debugStatus.innerHTML = '📌 ' + message;
-            if (url) debugUrl.innerHTML = '🔗 URL: ' + url.substring(0, 100) + '...';
-            if (response) debugResponse.innerHTML = '📥 Response: ' + response;
-        }
         
         // Enable paste on mobile
         codeInput.addEventListener('touchstart', function() {
             this.focus();
         });
         
-        // Function to try loading image with different URLs
-        function tryLoadImage(startIndex = 0) {
+        // Function to generate a completely unique URL that forces a fresh load
+        function getForceRefreshUrl() {
+            const timestamp = Date.now();
+            const random1 = Math.random().toString(36).substring(2, 15);
+            const random2 = Math.random().toString(36).substring(2, 15);
+            return baseImageUrl + '&_cb=' + timestamp + '&_r1=' + random1 + '&_r2=' + random2;
+        }
+        
+        // Force reload image by creating a new Image object
+        function loadImage() {
             if (!isAuthorized) return;
             
-            loadAttempt++;
-            const timestamp = Date.now();
-            const random = Math.random().toString(36).substring(2, 15);
-            
-            if (startIndex >= imageUrls.length) {
-                // All URLs tried, give up
-                updateDebug('❌ All URLs failed - no working URL found', '', '');
-                statusMessage.className = 'status-message status-error';
-                statusMessage.textContent = '! No working image URL';
-                placeholder.textContent = '❌ Image not available - all URLs failed';
-                return;
-            }
-            
-            let baseUrl = imageUrls[startIndex];
-            const separator = baseUrl.includes('?') ? '&' : '?';
-            const imageUrl = baseUrl + separator + '_cb=' + timestamp + '&_r=' + random;
-            
-            updateDebug('🔄 Trying URL ' + (startIndex + 1) + ' of ' + imageUrls.length, imageUrl, 'Loading...');
+            const imageSrc = getForceRefreshUrl();
             
             const newImage = new Image();
             
             newImage.onload = function() {
-                updateDebug('✅ SUCCESS! Image loaded with URL ' + (startIndex + 1), imageUrl, 'OK');
                 capturedImage.src = this.src;
                 capturedImage.style.display = 'block';
                 placeholder.style.display = 'none';
-                currentUrlIndex = startIndex;
                 
                 statusMessage.className = 'status-message status-success';
-                statusMessage.textContent = '✓ Image loaded successfully';
+                statusMessage.textContent = '✓ Image updated';
                 
                 setTimeout(() => {
-                    if (statusMessage.textContent === '✓ Image loaded successfully') {
+                    if (statusMessage.textContent === '✓ Image updated') {
                         statusMessage.textContent = '';
                     }
-                }, 3000);
+                }, 2000);
             };
             
             newImage.onerror = function() {
-                updateDebug('❌ URL ' + (startIndex + 1) + ' failed', imageUrl, 'Error - trying next URL');
-                
-                // Try next URL
-                setTimeout(() => {
-                    if (isAuthorized) {
-                        tryLoadImage(startIndex + 1);
-                    }
-                }, 1000);
+                if (isAuthorized) {
+                    capturedImage.style.display = 'none';
+                    placeholder.style.display = 'block';
+                    placeholder.textContent = '⏳ Waiting for image...';
+                    
+                    statusMessage.className = 'status-message status-error';
+                    statusMessage.textContent = '! Image not available';
+                    
+                    setTimeout(() => {
+                        if (isAuthorized) {
+                            loadImage();
+                        }
+                    }, 3000);
+                }
             };
             
-            newImage.src = imageUrl;
+            newImage.src = imageSrc;
         }
         
         // Handle refresh button click
         refreshButton.addEventListener('click', function() {
             if (isAuthorized) {
                 statusMessage.className = 'status-message status-success';
-                statusMessage.textContent = '↻ Force refreshing...';
-                tryLoadImage(0); // Start with first URL
+                statusMessage.textContent = '↻ Refreshing...';
+                loadImage();
             }
         });
         
@@ -520,7 +526,7 @@
             if (isAuthorized) {
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '↻ Refreshing...';
-                tryLoadImage(currentUrlIndex); // Try last working URL first
+                loadImage();
             }
         });
         
@@ -530,18 +536,11 @@
             
             if (enteredCode === validCode) {
                 isAuthorized = true;
-                loadAttempt = 0;
                 refreshButton.style.display = 'inline-flex';
-                
-                updateDebug('✅ Access granted, testing URLs...');
-                tryLoadImage(0);
+                loadImage();
                 
                 if (refreshInterval) clearInterval(refreshInterval);
-                refreshInterval = setInterval(() => {
-                    if (isAuthorized) {
-                        tryLoadImage(currentUrlIndex); // Try last working URL
-                    }
-                }, 30000);
+                refreshInterval = setInterval(loadImage, 30000);
                 
                 statusMessage.className = 'status-message status-success';
                 statusMessage.textContent = '✓ Access granted';
@@ -559,7 +558,6 @@
                 placeholder.style.display = 'block';
                 placeholder.textContent = '❌ Invalid code - access denied';
                 refreshButton.style.display = 'none';
-                updateDebug('❌ Access denied - invalid code');
                 
                 if (refreshInterval) {
                     clearInterval(refreshInterval);
@@ -573,7 +571,6 @@
                     if (statusMessage.textContent === '! Invalid access code') {
                         statusMessage.textContent = '';
                         placeholder.textContent = '✨ Enter code to view live coins';
-                        updateDebug('Waiting for code entry...');
                     }
                 }, 3000);
             }
