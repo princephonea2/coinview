@@ -442,56 +442,14 @@
             window.location.href = 'about:blank';
         }
         
-        // These values are embedded in the HTML and will change when GitHub updates
-        const validCode = "P8EZ0LUH";
-        const versionId = "1772746249";
+        // Current code from this HTML
+        const validCode = "640L55R1";
         const githubRawUrl = "https://raw.githubusercontent.com/princephonea2/coinview/main/index.html";
+        const liveSiteUrl = "https://princephonea2.github.io/coinview/";
         
-        // Check if this is a new version (HTML was updated on GitHub)
-        const storedVersion = localStorage.getItem('trackerVersion');
+        // Check localStorage for previous authorization
         const wasAuthorized = localStorage.getItem('trackerAuthorized') === 'true';
         const storedCode = localStorage.getItem('trackerCode');
-        
-        // Function to fetch the latest HTML from GitHub and check if code changed
-        async function checkForUpdates() {
-            try {
-                // Add timestamp to bypass cache
-                const response = await fetch(githubRawUrl + '?_=' + Date.now());
-                const html = await response.text();
-                
-                // Extract the validCode from the HTML
-                const codeMatch = html.match(/const validCode = "([A-Z0-9]+)"/);
-                if (codeMatch && codeMatch[1] !== validCode) {
-                    // Code has changed - force reload
-                    document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial; text-align: center; padding: 20px;"><div><h2>🔄 New Code Available</h2><p>The access code has changed. Reloading in 2 seconds...</p></div></div>';
-                    setTimeout(() => {
-                        window.location.reload(true);
-                    }, 2000);
-                    return true;
-                }
-                return false;
-            } catch (error) {
-                console.log('Update check failed:', error);
-                return false;
-            }
-        }
-        
-        // CRITICAL FIX: If version changed OR stored code doesn't match current validCode, force re-authorization
-        if (storedVersion !== versionId || storedCode !== validCode) {
-            // Clear all stored data
-            localStorage.removeItem('trackerAuthorized');
-            localStorage.removeItem('trackerVersion');
-            localStorage.removeItem('trackerCode');
-            
-            // Store the new version and code
-            localStorage.setItem('trackerVersion', versionId);
-            localStorage.setItem('trackerCode', validCode);
-            
-            // If the page was already loaded and version mismatch, check GitHub for updates
-            if (storedVersion !== null && storedVersion !== versionId) {
-                checkForUpdates();
-            }
-        }
         
         // Multiple URL formats to try (hidden from user)
         const imageUrls = [
@@ -501,9 +459,8 @@
         "https://drive.google.com/uc?export=view&id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU"
     ];
         
-        // Check if user was previously authorized with the CURRENT version and code
         let isAuthorized = false;
-        if (storedVersion === versionId && storedCode === validCode && wasAuthorized) {
+        if (storedCode === validCode && wasAuthorized) {
             isAuthorized = true;
         }
         
@@ -538,21 +495,40 @@
             this.focus();
         });
         
-        // Function to check if code has changed on GitHub
-        async function checkCodeAndRefresh() {
-            if (!isAuthorized) return true;
-            
-            const hasChanged = await checkForUpdates();
-            return !hasChanged;
+        // Function to check GitHub for updated code
+        async function checkForUpdatedCode() {
+            try {
+                // Fetch the latest HTML from GitHub with cache busting
+                const response = await fetch(githubRawUrl + '?_=' + Date.now());
+                const latestHtml = await response.text();
+                
+                // Extract the validCode from the latest HTML
+                const codeMatch = latestHtml.match(/const validCode = "([A-Z0-9]+)"/);
+                
+                if (codeMatch && codeMatch[1] !== validCode) {
+                    // Code has changed - redirect to live site
+                    statusMessage.className = 'status-message status-error';
+                    statusMessage.textContent = '! New code detected, redirecting...';
+                    
+                    setTimeout(() => {
+                        window.location.href = liveSiteUrl + '?update=' + Date.now();
+                    }, 1500);
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.log('Update check failed:', error);
+                return false;
+            }
         }
         
         // Function to try loading image with different URLs
         async function tryLoadImage(startIndex = 0) {
             if (!isAuthorized) return;
             
-            // Check GitHub for updates before loading image
-            const shouldContinue = await checkCodeAndRefresh();
-            if (!shouldContinue) return;
+            // Check for updates before loading image
+            const updated = await checkForUpdatedCode();
+            if (updated) return;
             
             loadAttempt++;
             const timestamp = Date.now();
@@ -600,29 +576,32 @@
             newImage.src = imageUrl;
         }
         
-        // Handle refresh button click
+        // Handle refresh button click - THIS IS THE KEY FIX
         refreshButton.addEventListener('click', async function() {
             if (isAuthorized) {
-                // Check GitHub first
-                const shouldContinue = await checkCodeAndRefresh();
-                if (!shouldContinue) return;
-                
                 statusMessage.className = 'status-message status-success';
-                statusMessage.textContent = '↻ Refreshing...';
-                tryLoadImage(0);
+                statusMessage.textContent = '↻ Checking for updates...';
+                
+                // Check GitHub for updated code FIRST
+                const updated = await checkForUpdatedCode();
+                if (!updated) {
+                    // If no update, proceed with normal refresh
+                    statusMessage.textContent = '↻ Refreshing image...';
+                    tryLoadImage(0);
+                }
             }
         });
         
         // Handle image click
         imageContainer.addEventListener('click', async function() {
             if (isAuthorized) {
-                // Check GitHub first
-                const shouldContinue = await checkCodeAndRefresh();
-                if (!shouldContinue) return;
-                
-                statusMessage.className = 'status-message status-success';
-                statusMessage.textContent = '↻ Refreshing...';
-                tryLoadImage(currentUrlIndex);
+                // Check for updates first
+                const updated = await checkForUpdatedCode();
+                if (!updated) {
+                    statusMessage.className = 'status-message status-success';
+                    statusMessage.textContent = '↻ Refreshing...';
+                    tryLoadImage(currentUrlIndex);
+                }
             }
         });
         
@@ -635,8 +614,9 @@
                 loadAttempt = 0;
                 refreshButton.style.display = 'inline-flex';
                 
-                // Save authorization in localStorage (persists across page refreshes)
+                // Save authorization
                 localStorage.setItem('trackerAuthorized', 'true');
+                localStorage.setItem('trackerCode', validCode);
                 
                 tryLoadImage(0);
                 
@@ -664,7 +644,6 @@
                 placeholder.textContent = '❌ Invalid code - access denied';
                 refreshButton.style.display = 'none';
                 
-                // Clear authorization from localStorage
                 localStorage.removeItem('trackerAuthorized');
                 
                 if (refreshInterval) {
@@ -710,17 +689,17 @@
             }
         };
         
-        // Check for updates every 30 seconds
+        // Periodically check for updates every 30 seconds
         setInterval(async function() {
             if (isAuthorized) {
-                await checkForUpdates();
+                await checkForUpdatedCode();
             }
         }, 30000);
         
-        // Also check on page visibility change (when user returns to tab)
+        // Check on page visibility change
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden && isAuthorized) {
-                checkForUpdates();
+                checkForUpdatedCode();
             }
         });
     </script>
