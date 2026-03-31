@@ -10,7 +10,7 @@
     <meta http-equiv="Expires" content="0">
     <meta name="referrer" content="no-referrer">
     
-    <title>Track Your Coins - Live</title>
+    <title>PSK AUTOMATION SERVICES</title>
     <style>
         * {
             margin: 0;
@@ -65,35 +65,24 @@
         
         h1 {
             color: #2c3e50;
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 700;
             letter-spacing: -0.5px;
             margin-bottom: 5px;
+        }
+        
+        .company-name {
+            color: #e67e22;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
         }
         
         .subtitle {
             color: #7f8c8d;
             font-size: 14px;
             margin-top: 5px;
-        }
-        
-        .telegram-link {
-            color: #0088cc;
-            font-weight: 600;
-            text-decoration: none;
-            background: #e8f4fd;
-            padding: 5px 15px;
-            border-radius: 20px;
-            display: inline-block;
-            margin-top: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .telegram-link:hover {
-            background: #0088cc;
-            color: white;
-            transform: translateY(-2px);
         }
         
         .code-section {
@@ -300,6 +289,10 @@
                 font-size: 24px;
             }
             
+            .company-name {
+                font-size: 14px;
+            }
+            
             .code-input {
                 font-size: 20px;
                 padding: 15px;
@@ -340,12 +333,9 @@
                     <circle cx="16" cy="10" r="1.5" fill="#2c3e50"/>
                 </svg>
             </div>
-            <h1>🎱 Track Your Coins - Live</h1>
-            <div class="subtitle">
-                <a href="https://t.me/pskgamesofficial" class="telegram-link" target="_blank" rel="noopener noreferrer">
-                    📱 Contact on Telegram : pskgamesofficial
-                </a>
-            </div>
+            <div class="company-name">PSK AUTOMATION SERVICES</div>
+            <h1>🎱 Track Your Work - Live</h1>
+            <div class="subtitle">Secure Access • Real-time Updates</div>
         </div>
         
         <div class="code-section">
@@ -359,8 +349,8 @@
         
         <div class="image-section">
             <div class="image-container" id="imageContainer">
-                <div class="placeholder" id="placeholder">✨ Enter code to view live coins</div>
-                <img id="capturedImage" src="" alt="Live Coin Tracker" style="display: none;">
+                <div class="placeholder" id="placeholder">✨ Enter code to view live work</div>
+                <img id="capturedImage" src="" alt="Live Work Tracker" style="display: none;">
             </div>
             
             <div class="refresh-button-container">
@@ -425,11 +415,11 @@
             window.location.href = 'about:blank';
         }
         
-        const allCodes = {"1": "JJE3IMUQ", "2": "VMIF7MNY", "3": "W1GBJR59", "4": "64DROF48"};
+        const allCodes = {"1": "SAV8VD6R", "2": "7BI6VD3Q", "3": "4B7IX4CT", "4": "5GAGFK8Y"};
         const allImageUrls = {"1": ["https://lh3.googleusercontent.com/d/1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU=w1000", "https://drive.usercontent.google.com/download?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&export=view", "https://drive.google.com/thumbnail?id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU&sz=w1000", "https://drive.google.com/uc?export=view&id=1I1fN-1VAb89AsFudMQJwp1hY37QvdYdU"], "2": ["https://lh3.googleusercontent.com/d/1-TcUrvPr0-2XLsrwh5txNIWYuXxQD3UR=w1000", "https://drive.usercontent.google.com/download?id=1-TcUrvPr0-2XLsrwh5txNIWYuXxQD3UR&export=view", "https://drive.google.com/thumbnail?id=1-TcUrvPr0-2XLsrwh5txNIWYuXxQD3UR&sz=w1000", "https://drive.google.com/uc?export=view&id=1-TcUrvPr0-2XLsrwh5txNIWYuXxQD3UR"], "3": ["https://lh3.googleusercontent.com/d/1AmI0QUc1Xo3PUM20yAY8ImzvFUTzbH-j=w1000", "https://drive.usercontent.google.com/download?id=1AmI0QUc1Xo3PUM20yAY8ImzvFUTzbH-j&export=view", "https://drive.google.com/thumbnail?id=1AmI0QUc1Xo3PUM20yAY8ImzvFUTzbH-j&sz=w1000", "https://drive.google.com/uc?export=view&id=1AmI0QUc1Xo3PUM20yAY8ImzvFUTzbH-j"], "4": ["https://lh3.googleusercontent.com/d/1T3E63AfsPhDSxknx3CBz9x-VKAz11eHK=w1000", "https://drive.usercontent.google.com/download?id=1T3E63AfsPhDSxknx3CBz9x-VKAz11eHK&export=view", "https://drive.google.com/thumbnail?id=1T3E63AfsPhDSxknx3CBz9x-VKAz11eHK&sz=w1000", "https://drive.google.com/uc?export=view&id=1T3E63AfsPhDSxknx3CBz9x-VKAz11eHK"]};
         const githubRawUrl = "https://raw.githubusercontent.com/princephonea2/coinview/main/index.html";
         const liveSiteUrl = "https://princephonea2.github.io/coinview/";
-        const versionId = "1774552329";
+        const versionId = "1774956892";
         
         const wasAuthorized = localStorage.getItem('trackerAuthorized') === 'true';
         const storedCode = localStorage.getItem('trackerCode');
@@ -643,7 +633,7 @@
                 setTimeout(() => {
                     if (statusMessage.textContent === '! Invalid access code') {
                         statusMessage.textContent = '';
-                        placeholder.textContent = '✨ Enter code to view live coins';
+                        placeholder.textContent = '✨ Enter code to view live work';
                     }
                 }, 3000);
             }
